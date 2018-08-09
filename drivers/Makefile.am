@@ -4,7 +4,13 @@
 # (libtool version of the static lib, in order to access LTLIBOBJS)
 #FIXME: SERLIBS is only useful for LDADD_DRIVERS_SERIAL not for LDADD_COMMON
 LDADD_COMMON = ../common/libcommon.la ../common/libparseconf.la
-LDADD_DRIVERS = $(LDADD_COMMON) main.o dstate.o
+# NOTE: We may want to compile and distribute both classic and 42ITy SHM versions
+# This version only enable one or the other, not both!
+if WITH_FTY_SHM
+  LDADD_DRIVERS = $(LDADD_COMMON) $(FTY_SHM_LIBS) main.o dstate-fty-shm.o
+else
+  LDADD_DRIVERS = $(LDADD_COMMON) main.o dstate.o
+endif
 LDADD_DRIVERS_SERIAL = $(LDADD_DRIVERS) $(SERLIBS) serial.o
 
 # most targets are drivers, so make this the default
@@ -27,6 +33,9 @@ if WITH_IPMI
 endif
 if WITH_MODBUS
   AM_CFLAGS += $(LIBMODBUS_CFLAGS)
+endif
+if WITH_FTY_SHM
+  AM_CFLAGS += $(FTY_SHM_CFLAGS)
 endif
 
 SERIAL_DRIVERLIST = al175 bcmxcp belkin belkinunv bestfcom	\
@@ -301,7 +310,7 @@ nutdrv_qx_SOURCES += $(NUTDRV_QX_SUBDRIVERS)
 
 dist_noinst_HEADERS = apc-mib.h apc-iem-mib.h apc-hid.h baytech-mib.h bcmxcp.h	\
  bcmxcp_io.h belkin.h belkin-hid.h bestpower-mib.h blazer.h cps-hid.h dstate.h \
- dummy-ups.h explore-hid.h gamatronic.h genericups.h	\
+ dstate-fty-shm.h dummy-ups.h explore-hid.h gamatronic.h genericups.h	\
  hidparser.h hidtypes.h ietf-mib.h libhid.h libshut.h libusb.h liebert-hid.h	\
  main.h mge-hid.h mge-mib.h mge-utalk.h		\
  mge-xml.h microdowell.h netvision-mib.h netxml-ups.h nut-ipmi.h oneac.h		\
@@ -320,6 +329,15 @@ dist_noinst_HEADERS = apc-mib.h apc-iem-mib.h apc-hid.h baytech-mib.h bcmxcp.h	\
 # corresponding object files.  This library is not actually built,
 EXTRA_LIBRARIES = libdummy.a
 libdummy_a_SOURCES = main.c dstate.c serial.c
+
+# the nutftyshmmain library combines the code for main.c and
+# dstate-fty-shm.c. It is necessary for Automake-technical reasons,
+# because per-object CFLAGS can only be specified for libraries, not
+# for object files. This library is used during the build process,
+# and is not meant to be installed.
+
+EXTRA_LIBRARIES += libnutftyshmmain.a
+libnutftyshmmain_a_SOURCES = main.c dstate-fty-shm.c
 
 # Also define a library with serial-port UPS routines needed for nut-scanner
 noinst_LTLIBRARIES = libserial-nutscan.la

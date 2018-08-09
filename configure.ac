@@ -291,6 +291,7 @@ dnl the usual builds can pass by default on systems without asciidoc.
 nut_with_docs="man=auto"
 NUT_ARG_WITH([docs], [build and install documentation (alias to --with-doc)], [man=auto])
 NUT_ARG_WITH([doc], [build and install documentation (see docs/configure.txt for many variants of the option)], [${nut_with_docs}])
+NUT_ARG_WITH([fty-shm], [enable 42ITy shared memory support for drivers], [no])
 
 dnl ----------------------------------------------------------------------
 dnl Check for presence and compiler flags of various libraries
@@ -663,6 +664,27 @@ fi
 NUT_REPORT_FEATURE([build CGI programs], [${nut_with_cgi}], [],
 					[WITH_CGI], [Define to enable CGI (HTTP) support])
 
+dnl ----------------------------------------------------------------------
+dnl checks related to --with-fty-shm
+
+PKG_CHECK_MODULES(FTY_SHM, libfty_shm, nut_have_libfty_shm=yes, nut_have_libfty_shm=no)
+
+dnl ${nut_with_fty_shm}: any value except "yes" or "no" is treated as "auto".
+if test "${nut_with_fty_shm}" = "yes" -a "${nut_have_libfty_shm}" != "yes"; then
+   AC_MSG_ERROR(["libfty-shm not found, required for FTY shared memory support"])
+fi
+
+if test "${nut_with_fty_shm}" != "no"; then
+   if test "${nut_have_libfty_shm}" = "yes"; then
+      nut_with_fty_shm="yes"
+   else
+      nut_with_fty_shm="no"
+   fi
+fi
+
+AM_CONDITIONAL(WITH_FTY_SHM, test "${nut_with_fty_shm}" = "yes")
+NUT_REPORT_FEATURE([enable 42ITy shared memory support for drivers], [${nut_with_fty_shm}], [],
+[WITH_FTY_SHM], [Define to enable 42ITy shared memory support for drivers])
 
 dnl ----------------------------------------------------------------------
 
