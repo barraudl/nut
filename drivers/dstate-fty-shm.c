@@ -33,6 +33,7 @@
 #include "state.h"
 #include "parseconf.h"
 
+	extern const char	**upsname;
 	static int	sockfd = -1, stale = 1, alarm_active = 0, ignorelb = 0;
 	static char	*sockfn = NULL;
 	static char	status_buf[ST_MAX_VALUE_LEN], alarm_buf[LARGEBUF];
@@ -161,6 +162,19 @@ static void sock_disconnect(conn_t *conn)
 	free(conn);
 }
 
+static void interpret_and_send(char* buf) {
+    char *p;
+    p = strtok(buf, " ");
+    if(strcasecmp(p, "SETINFO") == 0) {
+        char *data = strtok(NULL, " ");
+        char *value = strtok(NULL, " ");
+        fty_shm_write_nut_metric(upsname, data, value, 300);
+    }
+//    else if (p != NULL && !strcasecmp(p, "DATAOK")) {
+//
+//    }
+}
+
 static void send_to_all(const char *fmt, ...)
 {
 	int	ret;
@@ -178,6 +192,7 @@ static void send_to_all(const char *fmt, ...)
 	}
 
 	upsdebugx(5, "%s: %.*s", __func__, ret-1, buf);
+        interpret_and_send(buf);
 
 	for (conn = connhead; conn; conn = cnext) {
 		cnext = conn->next;
@@ -207,6 +222,7 @@ static int send_to_one(conn_t *conn, const char *fmt, ...)
 	}
 
 	upsdebugx(5, "%s: %.*s", __func__, ret-1, buf);
+        interpret_and_send(buf);
 
 	ret = write(conn->fd, buf, strlen(buf));
 
